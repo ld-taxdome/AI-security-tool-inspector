@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tool Inspector</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #f5f8ff; --surface: #ffffff; --ink: #0e0e0e; --muted: #454f68;
+  --blue: #266de8; --blue-text: #1c56c4; --yellow: #ffe629; --soft: #e6eeff; --paper: #fffdf3;
+  --line: #0e0e0e; --shadow: #0e0e0e; --dot: rgba(38, 109, 232, 0.16);
+  --good-bg: #d9e6ff; --bad-bg: #ffe0dc; --bad: #d2403d; --bad-text: #a8221f;
+  --green: #1f9d57; --green-bg: #d8f3e3; --amber-bg: #fff4a8;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0b1020; --surface: #151c33; --ink: #f5f8ff; --muted: #aeb9d6; --blue-text: #8db1ff; --soft: #1d2848; --paper: #1b233d; --line: #dfe7ff; --shadow: #2b3a73; --dot: rgba(141, 177, 255, 0.14); --good-bg: #16305f; --bad-bg: #4a2027; --bad: #e0504d; --bad-text: #ff9f9f; --green: #2fb36a; --green-bg: #12392a; --amber-bg: #3d3710; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0b1020; --surface: #151c33; --ink: #f5f8ff; --muted: #aeb9d6; --blue-text: #8db1ff; --soft: #1d2848; --paper: #1b233d; --line: #dfe7ff; --shadow: #2b3a73; --dot: rgba(141, 177, 255, 0.14); --good-bg: #16305f; --bad-bg: #4a2027; --bad: #e0504d; --bad-text: #ff9f9f; --green: #2fb36a; --green-bg: #12392a; --amber-bg: #3d3710; color-scheme: dark; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+*, *::before, *::after { box-sizing: inherit; }
+body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); font: 400 17px/1.55 "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif; overflow-x: hidden; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none; background-image: radial-gradient(circle, var(--dot) 2px, transparent 2.6px); background-size: 34px 34px; }
+.deco { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.deco i { position: absolute; border-radius: 50%; }
+.deco .a { width: 420px; height: 420px; background: var(--yellow); opacity: 0.3; right: -150px; top: -130px; }
+.deco .b { width: 540px; height: 540px; background: var(--blue); opacity: 0.14; left: -220px; bottom: -220px; }
+h1, h2, h3 { font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif; margin: 0; line-height: 1.1; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
+.top { background: var(--blue); border-bottom: 3px solid var(--line); }
+.top-in { max-width: 940px; margin: 0 auto; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.logo { display: block; height: 34px; width: auto; }
+.top-tag { color: #fff; font-weight: 600; font-size: 15px; }
+.wrap { max-width: 940px; margin: 0 auto; padding: 26px 18px 72px; display: grid; gap: 30px; }
+.card { background: var(--surface); border: 3px solid var(--line); border-radius: 26px; box-shadow: 8px 8px 0 var(--shadow); padding: 26px; }
+.hero { text-align: center; padding: 34px 26px 30px; }
+.title { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; font-size: clamp(42px, 11vw, 72px); font-weight: 800; letter-spacing: -0.03em; }
+.stk { display: inline-block; padding: 6px 20px 10px; border: 3px solid var(--line); border-radius: 18px; box-shadow: 5px 5px 0 var(--shadow); }
+.stk.s1 { background: var(--blue); color: #fff; transform: rotate(-3deg); }
+.stk.s2 { background: var(--yellow); color: #0e0e0e; transform: rotate(2.5deg); }
+.lead { max-width: 34em; margin: 22px auto 0; font-size: 19px; }
+.lamp { display: inline-block; width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--line); flex: none; }
+.lamp.g { background: var(--green); } .lamp.c { background: var(--yellow); } .lamp.i { background: var(--blue); } .lamp.n { background: var(--bad); }
+.dots { display: flex; gap: 10px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
+.dot { width: 42px; height: 42px; border-radius: 50%; border: 3px solid var(--line); display: grid; place-items: center; font: 800 17px/1 "Bricolage Grotesque", system-ui, sans-serif; background: var(--surface); transition: background 0.3s; }
+.dot.cur { background: var(--yellow); color: #0e0e0e; } .dot.ok { background: var(--blue); color: #fff; } .dot.no { background: var(--bad); color: #fff; }
+.ptext { margin-top: 10px; font-weight: 600; color: var(--muted); }
+.file { position: relative; padding-top: 38px; margin-top: 12px; }
+.tab { position: absolute; left: 24px; top: -16px; background: var(--yellow); color: #0e0e0e; border: 3px solid var(--line); border-radius: 12px 12px 0 0; padding: 4px 16px; font: 800 17px/1.3 "Bricolage Grotesque", system-ui, sans-serif; }
+.chip { display: inline-block; background: var(--tc, var(--soft)); color: #0e0e0e; border: 2px solid var(--line); border-radius: 999px; padding: 2px 12px; font-weight: 600; font-size: 14px; line-height: 1.5; vertical-align: middle; }
+.t-hr { --tc: #ffb8d0; } .t-marketing { --tc: #d4c2ff; } .t-support { --tc: #a8ccff; } .t-operations { --tc: #ffcf99; } .t-sales { --tc: #ffadad; } .t-revops { --tc: #ffe629; } .t-cs { --tc: #9fe3e6; }
+.file h2 { font-size: clamp(24px, 5vw, 32px); font-weight: 800; letter-spacing: -0.02em; margin-top: 8px; }
+.q { font: 800 20px/1.3 "Bricolage Grotesque", system-ui, sans-serif; margin: 22px 0 12px; }
+.res { margin-top: 22px; display: grid; gap: 12px; }
+.res[hidden] { display: none; }
+.verdict { padding: 14px 18px; border: 3px solid var(--line); border-radius: 18px; box-shadow: 5px 5px 0 var(--shadow); animation: rise 0.35s ease-out; }
+.verdict.right { background: var(--good-bg); } .verdict.wrong { background: var(--bad-bg); }
+.verdict h3 { font-size: 22px; font-weight: 800; }
+.verdict p { margin: 4px 0 0; }
+.box { background: var(--soft); border: 3px solid var(--line); border-radius: 16px; padding: 12px 16px; }
+.box b { font: 800 16px/1.3 "Bricolage Grotesque", system-ui, sans-serif; display: block; margin-bottom: 2px; }
+.remember { display: inline-block; justify-self: start; background: var(--yellow); color: #0e0e0e; border: 3px solid var(--line); border-radius: 14px; padding: 8px 16px; font: 800 18px/1.3 "Bricolage Grotesque", system-ui, sans-serif; box-shadow: 4px 4px 0 var(--shadow); transform: rotate(-1deg); }
+.fixbox { border: 2px dashed var(--line); border-radius: 14px; padding: 10px 14px; background: var(--surface); }
+.fixbox b { font: 800 16px/1.3 "Bricolage Grotesque", system-ui, sans-serif; display: block; }
+.btn { display: inline-flex; cursor: pointer; margin-top: 4px; background: var(--yellow); color: #0e0e0e; border: 3px solid var(--line); border-radius: 16px; padding: 12px 24px; font: 800 19px/1.1 "Bricolage Grotesque", system-ui, sans-serif; box-shadow: 5px 5px 0 var(--shadow); transition: transform 0.12s, box-shadow 0.12s; }
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--shadow); }
+.btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--shadow); }
+.tally { text-align: center; }
+.tally[hidden] { display: none; }
+.tally h2 { font-size: clamp(30px, 7vw, 44px); font-weight: 800; letter-spacing: -0.025em; }
+.tally > p { margin: 10px auto 0; max-width: 32em; font-size: 19px; }
+.rows { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 10px; text-align: left; }
+.rows li { display: flex; gap: 12px; align-items: center; background: var(--soft); border: 3px solid var(--line); border-radius: 16px; padding: 10px 14px; font-size: 16px; line-height: 1.35; }
+.rows .mk { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); display: grid; place-items: center; font: 800 16px/1 "Bricolage Grotesque", system-ui, sans-serif; background: var(--blue); color: #fff; }
+.rows .mk.no { background: var(--bad); }
+.rows b { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 800; }
+.sheet { margin-top: 24px; text-align: left; display: grid; gap: 10px; }
+.sheet h3 { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+.sheet div { display: flex; gap: 12px; align-items: flex-start; border: 3px solid var(--line); border-radius: 16px; padding: 10px 14px; background: var(--surface); }
+.sheet .lamp { margin-top: 3px; }
+.next { text-align: center; font: 800 20px/1.3 "Bricolage Grotesque", system-ui, sans-serif; margin: 0; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes stampIn { 0% { opacity: 0; transform: rotate(-24deg) scale(2.6); } 70% { opacity: 1; transform: rotate(-7deg) scale(0.94); } 100% { opacity: 0.92; transform: rotate(-9deg) scale(1); } }
+@media (max-width: 640px) {
+  .card { padding: 18px; border-radius: 22px; box-shadow: 6px 6px 0 var(--shadow); }
+  .card.file { padding-top: 38px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+.legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0 0; text-align: left; }
+.lgt { background: var(--soft); border: 3px solid var(--line); border-radius: 18px; padding: 12px 14px; font-size: 15px; line-height: 1.4; font-weight: 500; }
+.lgt b { display: block; font: 800 17px/1.2 "Bricolage Grotesque", system-ui, sans-serif; margin-bottom: 4px; }
+.five { margin: 16px 0 0; font-weight: 600; color: var(--muted); }
+.banner { margin-top: 12px; border: 3px dashed var(--line); background: var(--amber-bg); border-radius: 14px; padding: 8px 14px; font-weight: 600; }
+.banner b { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 800; }
+.story { font-size: 19px; margin: 12px 0 0; }
+.lenses { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.lens { cursor: pointer; display: grid; justify-items: center; gap: 4px; background: var(--surface); border: 3px solid var(--line); border-radius: 18px; padding: 12px 6px; box-shadow: 4px 4px 0 var(--shadow); font: 800 16px/1.2 "Bricolage Grotesque", system-ui, sans-serif; transition: transform 0.12s, box-shadow 0.12s; }
+.lens svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.lens small { font: 500 13px/1.2 "Instrument Sans", system-ui, sans-serif; color: var(--muted); text-align: center; }
+.lens:hover:not([aria-expanded="true"]) { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 6px 6px 0 var(--shadow); }
+.lens[aria-expanded="true"] { background: var(--yellow); color: #0e0e0e; box-shadow: none; cursor: default; }
+.lens[aria-expanded="true"] small { color: #0e0e0e; }
+.count { margin-top: 12px; font-weight: 600; color: var(--muted); }
+.slots { display: grid; gap: 10px; margin-top: 10px; }
+.slot { border: 3px solid var(--line); border-radius: 16px; padding: 10px 14px; background: var(--surface); display: grid; grid-template-columns: 34px 1fr; gap: 4px 12px; align-items: start; }
+.slot .si { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); display: grid; place-items: center; background: var(--surface); }
+.slot .si svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.slot h3 { font-size: 17px; font-weight: 800; }
+.slot p { margin: 2px 0 0; font-size: 16px; line-height: 1.4; }
+.slot.closed { border-style: dashed; color: var(--muted); }
+.slot.closed .si { border-style: dashed; }
+.slot.ok { background: var(--good-bg); animation: rise 0.3s ease-out; }
+.slot.ok .si { background: var(--blue); color: #fff; }
+.slot.flag { background: var(--bad-bg); animation: rise 0.3s ease-out; }
+.slot.flag .si { background: var(--bad); color: #fff; }
+.slot .tagl { display: inline-block; margin-left: 8px; font: 800 13px/1.4 "Bricolage Grotesque", system-ui, sans-serif; border: 2px solid var(--line); border-radius: 999px; padding: 0 10px; background: var(--surface); color: var(--ink); vertical-align: middle; }
+.tray { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 22px; }
+.tray > span { font-weight: 600; color: var(--muted); }
+.sbtn { cursor: pointer; background: var(--surface); border: 4px solid currentColor; border-radius: 14px; padding: 8px 20px; font: 800 22px/1.1 "Bricolage Grotesque", system-ui, sans-serif; letter-spacing: 0.04em; box-shadow: 4px 4px 0 var(--shadow); transition: transform 0.12s, box-shadow 0.12s; }
+.sbtn.go { color: var(--blue-text); } .sbtn.ask { color: var(--ink); background: var(--yellow); border-color: var(--line); } .sbtn.ask { color: #0e0e0e; } .sbtn.stop { color: var(--bad-text); }
+.sbtn:hover:not([disabled]) { transform: translate(-2px, -2px) rotate(-2deg); box-shadow: 6px 6px 0 var(--shadow); }
+.sbtn:active:not([disabled]) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--shadow); }
+.sbtn[disabled] { cursor: default; opacity: 0.45; box-shadow: none; }
+.sbtn.chosen { opacity: 1; }
+.stampbig { position: absolute; right: 18px; top: 52px; padding: 4px 18px; border: 6px solid currentColor; border-radius: 12px; font: 800 34px/1.1 "Bricolage Grotesque", system-ui, sans-serif; letter-spacing: 0.06em; transform: rotate(-9deg); opacity: 0; pointer-events: none; background: var(--surface); }
+.stampbig.go { color: var(--blue-text); } .stampbig.ask { color: var(--ink); background: var(--yellow); border-color: var(--line); } .stampbig.ask { color: #0e0e0e; } .stampbig.stop { color: var(--bad-text); }
+.stampbig.on { opacity: 0.94; animation: stampIn 0.35s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.badge { font-weight: 600; }
+.five-list { margin: 18px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.five-list li { background: var(--yellow); color: #0e0e0e; border: 3px solid var(--line); border-radius: 999px; padding: 4px 16px; font: 800 17px/1.3 "Bricolage Grotesque", system-ui, sans-serif; box-shadow: 3px 3px 0 var(--shadow); }
+@media (max-width: 760px) { .lenses { grid-template-columns: repeat(3, 1fr); } .legend { grid-template-columns: 1fr; } .stampbig { position: static; display: inline-block; margin-top: 12px; font-size: 26px; } }
+@media (max-width: 460px) { .lenses { grid-template-columns: 1fr 1fr; } }
+@media (prefers-reduced-motion: reduce) { .stampbig.on { opacity: 0.94; } }
+
+</style>
+</head>
+<body>
+<div class="deco" aria-hidden="true"><i class="a"></i><i class="b"></i></div>
+<header class="top">
+  <div class="top-in">
+    <svg class="logo" role="img" aria-label="TaxDome" viewBox="0 0 120 32" width="128" height="34"><path d="M10.5356 3.37849C11.3829 2.90571 12.4132 2.87566 13.2834 3.28941L13.4548 3.37849L15.1444 4.32389C15.4687 4.50548 15.5262 4.91904 15.3533 5.20702C15.1864 5.48465 14.8167 5.62805 14.5061 5.45511L12.7885 4.49918V4.49822C12.2924 4.22151 11.6808 4.22162 11.1845 4.49822L2.10366 9.58055C1.60913 9.85854 1.30614 10.3687 1.30456 10.9187V21.0814L1.31996 21.2854C1.38689 21.7565 1.67502 22.1779 2.1104 22.4195H2.11136L11.1922 27.5019C11.6886 27.7787 12.3 27.7787 12.7962 27.5019L21.8771 22.4195L22.0533 22.3056C22.4426 22.0144 22.675 21.5636 22.6762 21.0824V10.9187C22.6748 10.4376 22.4424 9.98688 22.0533 9.6955L21.8771 9.58055L21.1598 9.17922C20.8382 8.99902 20.7781 8.58995 20.947 8.30183C21.1128 8.0197 21.4858 7.87303 21.7991 8.048L22.5366 8.45987L22.7012 8.56045C23.5066 9.08438 23.9979 9.96591 24 10.9177V21.0824C24 22.0955 23.4459 23.031 22.5472 23.5402H22.5462L13.4653 28.6226H13.4644C12.5605 29.1259 11.4491 29.126 10.5453 28.6226L1.46341 23.5402C0.560342 23.0338 0.00167075 22.0978 1.89029e-07 21.0824V10.9187C-0.000373914 9.90528 0.554559 8.96976 1.45379 8.46083V8.45987L10.5356 3.37849ZM11.4811 14.6073H8.85655V19.6916H7.16399V14.6073H4.53947V13.0757H11.4811V14.6073ZM15.5324 13.0757C17.6291 13.0757 19.1514 14.4655 19.1515 16.3822C19.1515 18.2991 17.6292 19.6916 15.5324 19.6916H12.8434V13.0757H15.5324ZM14.5359 18.1887H15.5324V18.1849C16.6441 18.1848 17.3904 17.4692 17.3906 16.3918C17.3906 15.3141 16.6443 14.5902 15.5324 14.5901H14.5359V18.1887ZM18.1271 5.36315C18.9244 5.36341 19.5712 5.98965 19.5712 6.76257C19.5712 7.53545 18.9244 8.16173 18.1271 8.16198C17.3295 8.16198 16.683 7.53561 16.6829 6.76257C16.6829 5.9895 17.3295 5.36315 18.1271 5.36315Z" fill="#FFFFFF"/><path d="M88.0975 9.99988C91.8513 9.99988 94.5377 12.6691 94.5377 16.0003C94.5375 19.3313 91.8088 21.9997 88.0553 21.9999C84.3017 21.9999 81.6154 19.3314 81.6151 16.0003C81.6151 12.7024 84.3439 10.0001 88.0975 9.99988ZM120 12.4586H113.399V14.8118H119.136V17.0947H113.399V19.5332H120V21.8021H110.74V10.1862H120V12.4586ZM54.2883 21.8012H51.4946L50.3843 19.1983H45.2374L44.1271 21.8012H41.398L46.6059 10.1159H49.075L54.2883 21.8012ZM41.7881 12.5527H37.2339V21.7995H34.5506L34.5569 12.5527H30V10.1985H41.7881V12.5527ZM61.0577 13.96L63.6316 10.1985H66.671L62.5958 15.8658L66.8378 21.7995H63.7168L60.9859 17.8235L58.2407 21.7995H55.2004L59.4398 15.8992L55.3753 10.1985H58.5035L61.0577 13.96ZM73.4736 10.1985C77.2969 10.1987 79.9398 12.7015 79.9398 15.9994C79.9394 19.297 77.2967 21.7993 73.4736 21.7995H68.7293V10.1985H73.4736ZM102.509 15.094L105.705 10.1862H108.589V21.7924H105.931V14.2185L102.509 19.172H102.44L99.0506 14.28V21.7924H96.4265V10.1862H99.3116L102.509 15.094ZM88.0661 12.3531C85.9117 12.3531 84.417 13.9773 84.4169 15.9986C84.4171 18.0196 85.9466 19.6528 88.1011 19.6528C90.2553 19.6526 91.7492 18.0195 91.7494 15.9986C91.7493 14.0107 90.2204 12.3533 88.0661 12.3531ZM71.4055 19.4963H73.4736C75.6628 19.4963 77.1414 18.0861 77.1417 15.9986C77.1417 13.9108 75.6631 12.5008 73.4736 12.5008H71.4055V19.4963ZM46.1979 16.9435H49.4175L47.8077 13.1829L46.1979 16.9435Z" fill="#FFFFFF"/></svg>
+    <span class="top-tag">AI Security course</span>
+  </div>
+</header>
+<main class="wrap">
+  <section class="card hero" aria-labelledby="pageTitle">
+    <h1 class="title" id="pageTitle"><span class="stk s1">Tool</span><span class="stk s2">Inspector</span></h1>
+    <p class="lead">Six AI tools are waiting on your desk. Open the five lenses to see what’s really going on, then stamp the file.</p>
+    <div class="legend">
+      <div class="lgt"><b>GO</b>The tool is on the policy’s list and every check is clear.</div>
+      <div class="lgt"><b>ASK INFOSEC</b>Pause. The tool is unlisted, something has changed, or you can’t tell.</div>
+      <div class="lgt"><b>STOP</b>The policy rules it out.</div>
+    </div>
+    <p class="five">The five lenses: the data, the account, the training, the access, the maker.</p>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <div class="ptext" id="ptext" role="status">Tool 1 of 6</div>
+  </section>
+
+  <div id="stage"></div>
+
+  <section class="card tally" id="tally" role="status" hidden>
+    <h2 id="tHead"></h2>
+    <p id="tText"></p>
+    <ul class="rows" id="rows"></ul>
+    <div class="sheet">
+      <h3>Keep these in your head</h3>
+      <ul class="five-list"><li>The data</li><li>The account</li><li>The training</li><li>The access</li><li>The maker</li></ul>
+      <div><span><b>Three stamps:</b> GO, ASK INFOSEC, STOP. A clean tool that isn’t on the list still gets ASK INFOSEC.</span></div>
+      <div><span><b>Approvals go stale.</b> When a setting, the terms, the tool or its connections change, inspect it again.</span></div>
+    </div>
+    <button type="button" class="btn" id="again" style="margin-top:22px">Inspect again</button>
+  </section>
+
+  <p class="next">Next: the checkpoint quiz.</p>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var ICON = {
+    data: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg>',
+    account: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>',
+    training: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="5"/><circle cx="8" cy="12" r="2.6"/></svg>',
+    access: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9"/><path d="M16 7l3 3"/><path d="M13.5 9.5l2 2"/></svg>',
+    maker: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V9l6 3V9l6 3V5h6v16z"/></svg>',
+    ok: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>',
+    flag: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/></svg>',
+    none: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12h8"/></svg>'
+  };
+  var LENSES = [
+    { k: "data", name: "The data", sub: "What goes in?" },
+    { k: "account", name: "The account", sub: "Which plan and email?" },
+    { k: "training", name: "The training", sub: "Is training off?" },
+    { k: "access", name: "The access", sub: "What can it reach?" },
+    { k: "maker", name: "The maker", sub: "Who and where?" }
+  ];
+  var STAMPS = { go: "GO", ask: "ASK INFOSEC", stop: "STOP" };
+
+  var TOOLS = [
+    { name: "Claude, Team seat", tag: "Your usual", re: "", task: "Summarize an internal planning doc.", right: "go",
+      data: [1, "An internal planning doc. Class: internal."],
+      account: [1, "Company Team seat, signed in with your @taxdome.com email."],
+      training: [1, "Model training is off on Team plans. There is nothing for you to switch."],
+      access: [1, "Chat only. Not connected to any company system."],
+      maker: [1, "Anthropic. Claude on a Team seat is on the policy’s list, as Tier 1."],
+      why: "All five checks are clear and the tool is on the policy’s list. Checks like these should feel quick when everything is in order. You still read the output before you rely on it.",
+      next: "Go ahead, and check the output as you always do." },
+
+    { name: "A free AI chatbot", tag: "Found by a colleague", re: "", task: "Polish an email to a client about an overdue invoice.", right: "stop",
+      data: [0, "A client’s name, invoice number and the amount owed. Class: confidential."],
+      account: [0, "Free plan, signed up with your personal Gmail address."],
+      training: [0, "On free consumer plans, chats may be used to train the model unless you find and change a setting."],
+      access: [1, "Chat only."],
+      maker: [1, "A well-known vendor. The policy puts free tools in Tier 3: public data only."],
+      why: "A free account on a personal email can’t take company data above public, and this email holds a client’s name and invoice details. One flag would have been enough. This file has three.",
+      next: "Use your Team seat instead. No seat yet? Ask in #security_helpdesk." },
+
+    { name: "SlideSpark", tag: "New this week", re: "", task: "Turn your team’s internal quarterly plan into slides.", right: "ask",
+      data: [1, "Your team’s internal plan. Class: internal."],
+      account: [1, "Paid business plan, signed up with your @taxdome.com email."],
+      training: [1, "Training is off, and the vendor’s documentation says so clearly."],
+      access: [1, "Upload and export only. No connection to company systems."],
+      maker: [0, "A well-known software company with a public security page. On the policy’s list? No."],
+      why: "Every check came back clean, and it still isn’t on the list. The policy says to contact InfoSec before any company data goes into a tool it doesn’t list. Clean answers make your question quick to answer. They don’t replace it.",
+      next: "Ask InfoSec, and bring your five answers with you." },
+
+    { name: "Claude, Team seat", tag: "Re-inspection", re: "You checked this tool last month and it passed. Check it again.", task: "A colleague has connected it to your CRM so it can update contact records for you.", right: "stop",
+      data: [1, "CRM contact records: names, emails, account details. Class: confidential, which a Team seat can take."],
+      account: [1, "Same Team seat, same company email."],
+      training: [1, "Still off."],
+      access: [0, "New since last month: write access to every CRM record, with no scoping. Nobody has agreed the access with the CRM’s owner."],
+      maker: [1, "Anthropic, still on the policy’s list."],
+      why: "The tool didn’t change. The access did. Connecting an AI tool to a company system in write mode without scoping isn’t allowed, so an approval for chatting doesn’t carry over.",
+      next: "Agree the access with the CRM’s owner and limit it to what the task needs. Module 4 shows how." },
+
+    { name: "DraftDesk", tag: "Re-inspection", re: "InfoSec approved this in the summer. Check it again.", task: "Tidy up an internal onboarding guide.", right: "ask",
+      data: [1, "An internal onboarding guide. Class: internal."],
+      account: [1, "Business plan on your @taxdome.com email."],
+      training: [0, "New: the vendor updated its terms yesterday. Prompts may now be used to improve its models unless you opt out, and the setting is on."],
+      access: [1, "Chat only."],
+      maker: [1, "The same vendor InfoSec looked at earlier."],
+      why: "The approval was for the old terms. Pause, keep company data out of it, check the setting, and tell InfoSec the terms changed. They can say whether the approval still stands.",
+      next: "Tell InfoSec what changed, and wait for their answer." },
+
+    { name: "ChatBridge", tag: "Went viral on social media", re: "", task: "Brainstorm headlines for a public blog post.", right: "stop",
+      data: [1, "Headline ideas for a public blog post. Class: public."],
+      account: [1, "Paid plan on your @taxdome.com email."],
+      training: [1, "Training is off."],
+      access: [1, "Chat only."],
+      maker: [0, "Its model is hosted directly by the provider outside the US and the EU."],
+      why: "The policy doesn’t allow AI models hosted outside the US or EU, whatever the data. Public data doesn’t rescue it. Models offered through US- or EU-hosted infrastructure are a different matter.",
+      next: "Pick a tool the policy lists, or ask InfoSec if you need something else." }
+  ];
+
+  var $ = function (s) { return document.querySelector(s); };
+  var stage = $("#stage"), dotsEl = $("#dots"), ptext = $("#ptext"), tally = $("#tally");
+  var cur = 0, score = 0, thorough = 0, log = [], opened = {};
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function countOpen() { return Object.keys(opened).length; }
+
+  function drawDots() {
+    dotsEl.innerHTML = "";
+    TOOLS.forEach(function (t, n) {
+      var d = document.createElement("span"), res = log[n];
+      d.className = "dot" + (res ? (res.ok ? " ok" : " no") : (n === cur ? " cur" : ""));
+      d.textContent = res ? (res.ok ? "\u2713" : "\u2717") : String(n + 1);
+      dotsEl.appendChild(d);
+    });
+  }
+
+  function slotHtml(l, state, t) {
+    var d = t[l.k], body, cls, icon, tagl = "";
+    if (state === "closed") { cls = "closed"; icon = ICON.none; body = "Not opened yet."; }
+    else { cls = d[0] ? "ok" : "flag"; icon = d[0] ? ICON.ok : ICON.flag; body = d[1]; tagl = '<span class="tagl">' + (d[0] ? "Clear" : "Red flag") + (state === "skipped" ? ", not opened" : "") + "</span>"; }
+    return '<div class="slot ' + cls + '" id="slot-' + l.k + '"><span class="si">' + icon + '</span><div><h3>' + l.name + tagl + '</h3><p>' + esc(body) + '</p></div></div>';
+  }
+
+  function show() {
+    var t = TOOLS[cur]; opened = {};
+    tally.hidden = true;
+    ptext.textContent = "Tool " + (cur + 1) + " of " + TOOLS.length;
+    drawDots();
+    var lensBtns = LENSES.map(function (l) {
+      return '<button type="button" class="lens" data-k="' + l.k + '" aria-expanded="false">' + ICON[l.k] + l.name + '<small>' + l.sub + '</small></button>';
+    }).join("");
+    var slots = LENSES.map(function (l) { return slotHtml(l, "closed", t); }).join("");
+    stage.innerHTML =
+      '<article class="card file">' +
+        '<span class="tab">Tool 0' + (cur + 1) + '</span>' +
+        '<span class="chip">' + esc(t.tag) + '</span>' +
+        '<h2>' + esc(t.name) + '</h2>' +
+        (t.re ? '<div class="banner"><b>Re-inspection.</b> ' + esc(t.re) + '</div>' : "") +
+        '<p class="story"><b>You want to:</b> ' + esc(t.task) + '</p>' +
+        '<p class="q">Open the lenses, then stamp the file.</p>' +
+        '<div class="lenses">' + lensBtns + '</div>' +
+        '<div class="count" id="cnt" aria-live="polite">0 of 5 lenses opened</div>' +
+        '<div class="slots" id="slots">' + slots + '</div>' +
+        '<div class="tray"><span>Your stamp:</span>' +
+          '<button type="button" class="sbtn go" data-s="go">GO</button>' +
+          '<button type="button" class="sbtn ask" data-s="ask">ASK INFOSEC</button>' +
+          '<button type="button" class="sbtn stop" data-s="stop">STOP</button></div>' +
+        '<span class="stampbig" id="big" aria-hidden="true"></span>' +
+        '<div class="res" id="res" hidden role="status"></div>' +
+      '</article>';
+    stage.querySelectorAll(".lens").forEach(function (b) {
+      b.addEventListener("click", function () { openLens(b.getAttribute("data-k"), b); });
+    });
+    stage.querySelectorAll(".sbtn").forEach(function (b) {
+      b.addEventListener("click", function () { stamp(b.getAttribute("data-s"), b); });
+    });
+  }
+
+  function openLens(k, btn) {
+    if (log[cur] || opened[k]) return;
+    opened[k] = true;
+    btn.setAttribute("aria-expanded", "true");
+    var l = LENSES.filter(function (x) { return x.k === k; })[0];
+    $("#slot-" + k).outerHTML = slotHtml(l, "open", TOOLS[cur]);
+    var n = countOpen();
+    $("#cnt").textContent = n === 5 ? "All five lenses opened." : n + " of 5 lenses opened";
+  }
+
+  function stamp(s, btn) {
+    if (log[cur]) return;
+    var t = TOOLS[cur], ok = (s === t.right), n = countOpen(), full = (n === 5);
+    log[cur] = { ok: ok, said: s, full: full };
+    if (ok) score++; if (full) thorough++;
+    drawDots();
+    stage.querySelectorAll(".sbtn").forEach(function (b) { b.disabled = true; });
+    btn.classList.add("chosen");
+    stage.querySelectorAll(".lens").forEach(function (b) { b.disabled = true; });
+    LENSES.forEach(function (l) { if (!opened[l.k]) { $("#slot-" + l.k).outerHTML = slotHtml(l, "skipped", t); } });
+    var big = $("#big"); big.textContent = STAMPS[s]; big.className = "stampbig " + s; void big.offsetWidth; big.classList.add("on");
+    var last = (cur === TOOLS.length - 1), res = $("#res"); res.hidden = false;
+    res.innerHTML =
+      '<div class="verdict ' + (ok ? "right" : "wrong") + '"><h3>' + (ok ? "Right stamp." : "Not quite. The right stamp: " + STAMPS[t.right] + ".") + '</h3>' +
+        '<p class="badge">' + (full ? "Inspector’s habit: you opened all five lenses before you stamped." : "You opened " + n + " of 5 lenses. The other " + (5 - n) + (5 - n === 1 ? " is" : " are") + " now shown above.") + '</p></div>' +
+      '<div class="box"><b>Why</b>' + esc(t.why) + '</div>' +
+      '<div class="fixbox"><b>What to do</b>' + esc(t.next) + '</div>' +
+      '<div><button type="button" class="btn" id="nextBtn">' + (last ? "See your inspection report" : "Next tool") + '</button></div>';
+    $("#nextBtn").addEventListener("click", function () { if (last) { finish(); } else { cur++; show(); stage.scrollIntoView({ behavior: "smooth", block: "start" }); } });
+    $("#nextBtn").focus({ preventScroll: true });
+    res.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function finish() {
+    stage.innerHTML = "";
+    ptext.textContent = "Inspection complete";
+    drawDots();
+    tally.hidden = false;
+    $("#tHead").textContent = score + " of " + TOOLS.length + " stamps right";
+    $("#tText").textContent = (score === TOOLS.length ? "Chief Inspector. Every stamp right. " : score >= 4 ? "Inspector. Nearly there. " : "Trainee. Reopen the files. ") +
+      "You opened all five lenses on " + thorough + " of " + TOOLS.length + " tools.";
+    $("#rows").innerHTML = TOOLS.map(function (t, n) {
+      var l = log[n];
+      return '<li><span class="mk' + (l.ok ? "" : " no") + '">' + (l.ok ? "\u2713" : "\u2717") + '</span><span><b>' + esc(t.name) + (t.re ? " (re-inspection)" : "") + '</b><br>You stamped ' + STAMPS[l.said] + (l.ok ? "." : ". Right stamp: " + STAMPS[t.right] + ".") + '</span></li>';
+    }).join("");
+    tally.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  $("#again").addEventListener("click", function () { cur = 0; score = 0; thorough = 0; log = []; show(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+  show();
+})();
+</script>
+</body>
+</html>
